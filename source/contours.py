@@ -67,8 +67,6 @@ def shift_up(contour):
         accum += pt[1]
     accum /= len(contour)
 
-    print("accum", accum)
-
     for pt in contour[:,0,:]:
         pt[1] -= accum 
         pt[1] += 350
@@ -79,7 +77,14 @@ def scale_contour(contour, scale_factor=1):
     for pt in contour[:,0,:]:
         pt[0] *= scale_factor
         pt[1] *= scale_factor
+    print(contour)
     return contour
+
+def scale_pts(pts, scale_factor=1):
+    for pt in pts:
+        pt[0] *= scale_factor
+        pt[1] *= scale_factor
+    return pts
 
 def cartesian_to_polar(x, y):
     theta = np.arctan2(y, x)
@@ -112,48 +117,76 @@ def rotate_contour(contour, angle):
     normalized_contour[:, 0, 1] = ys
 
     rotated_contour = normalized_contour + [cx, cy]
-    rotated_contour = rotated_contour.astype(np.int32)
+    print(rotated_contour)
+    # rotated_contour = rotated_contour.astype(np.int32)
 
     return rotated_contour
 
-def extract_data(contour):
-    xs = []
-    ys = []
+def adjust_pts(pts, scale, angle):
+    '''
+        Given a list of selected points, returns the 
+        scaled and rotated points. This normalizes 
+        across images. 
 
-    for i in range(0, len(contour[:,0,:])):
-        xs += [contour[i, 0, 0]]
-        ys += [-1 * contour[i, 0, 1]]
+        pts == pts to be adjusted
+        scale == scale of the image (cm/px)
+        angle == angle at which the points should be rotated
+    '''
+    contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
 
-    return xs, ys
+    # Scales and rotates contour to normalize across pictures 
+    contour = scale_contour(contour, 10000)    
+    contour = rotate_contour(contour, -angle + 180)
+    pts = np.array(contour).reshape((-1, 2)).astype(np.float)
+    pts = scale_pts(pts, scale/10000)    
 
-def process_contour(img, pts, scale, scale_factor, angle, FAT_DEPTH):
-    initial_contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
+    return pts
 
-    # Reduces noise on contour 
-    smooth_contours = smooth_contour([initial_contour])
+def expand_contour(contour, scale_factor, expansion):
+    '''
+        Given a contour of selected points, 
+        function smooths, expands, and returns
+        expanded contour.
+
+        contour == contour wanting to be expanded 
+        scale_factor == scale factor of contour to cm (contour / scale_factor = cm)
+        expansion == desired expansion distance in cm
+    '''
+    print("1:", contour)
+    # Smoothes contour and adds resolution 
+    contours = smooth_contour([contour])
+    
+    print("2:", contours)
 
     # Finds distance transform of drawn contour
-    new_size = (img.shape[0] + 500, img.shape[1] + 500, img.shape[2] + 0)
+    new_size = (int(max(contours[0][:,0,0]) + expansion/scale_factor + 100), int(max(contours[0][:,0,1]) + expansion/scale_factor + 100), 3)
     temp = np.ones(new_size,dtype=np.uint8)
-    cv2.drawContours(temp, smooth_contours, 0, (0, 0, 0))
+    cv2.drawContours(temp, contours, 0, (0, 0, 0))
     temp = cv2.cvtColor(temp, cv2.COLOR_BGR2GRAY)
     dist = cv2.distanceTransform(temp, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
 
     # Finds contour with a specified fat thickness  
-    b = int(FAT_DEPTH/scale) - 0.5
-    t = int(FAT_DEPTH/scale) + 0.5
+    b = int(expansion/scale_factor) - 0.5
+    t = int(expansion/scale_factor) + 0.5
     ring = cv2.inRange(dist, b, t)
     expanded_contours, hierarchy = cv2.findContours(ring, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-    expanded_contour = expanded_contours[2]
 
-    cv2.drawContours(img, smooth_contours, 0, (255, 255, 0))
-    cv2.drawContours(img, expanded_contours, 2, (0, 0, 255), 2)
+    #### Output format of expanded_contours is off. Not sure why.
 
-    # Scales and rotates contour to normalize across pictures 
-    expanded_contour = rotate_contour(expanded_contour, -angle + 180)
-    expanded_contour = scale_contour(expanded_contour, scale_factor)  
-    expanded_contour = crop_top(expanded_contour)
-    expanded_contour = shift_left(expanded_contour)
-    expanded_contour = shift_up(expanded_contour)
+    print("4:", expanded_contours[0])
 
-    return expanded_contour
+    # Find the largest contour (removes chance of inner offset being returned)
+    areas = [cv2.contourArea(expanded_contours[i]) for i in range(0, len(expanded_contours))]
+    index = areas.index(max(areas))
+
+    print("3:", expanded_contours[index])
+
+    return expanded_contours[index]
+
+def shift_contour(contour):
+    # Shifts contour to same location as all others
+    # Alter this to adjust alignment between loins
+    contour = shift_left(contour)
+    contour = shift_up(contour)
+
+    return contour

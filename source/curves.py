@@ -4,6 +4,9 @@ from scipy.optimize import curve_fit
 from scipy import stats
 import matplotlib.pyplot as plt 
 import numpy as np
+from tqdm import tqdm
+
+from quicksort import quickSort
 
 def func(x, params):
     return params[0] * x**8 + params[1] * x**7 + params[2] * x**6 + params[3] * x**5 + params[4] * x**4 + params[5] * x**3 + params[6] * x**2 + params[7] * x + params[8]
@@ -15,23 +18,11 @@ def poly(x, d, e, f, g, h, i, j, k, l):
     return d*x**8 + e*x**7 + f*x**6 + g*x**5 + h*x**4 + i*x**3 + j*x**2 + k*x + l
 
 def fit_curve(xs, ys):
-    xs, ys = sort_data(xs, ys)
+    print("Fitting curve to data...")
+    quickSort(xs, ys)
     popt, pcov = curve_fit(poly, xs, ys)
-    
+    print("Curve fit with parameters\n", popt)
     return popt
-
-def sort_data(xs, ys):
-    for i in range(0, len(xs) - 1):
-        flag = False
-        for j in range(0, len(xs) - 1):
-            if xs[j] > xs[j + 1]:
-                flag = True
-                xs[j], xs[j+ 1] = xs[j + 1], xs[j]
-                ys[j], ys[j+ 1] = ys[j + 1], ys[j]
-        if flag == False:
-            break
-
-    return xs, ys
 
 def polar_to_cartesian(theta, r):
     x = r * np.cos(theta)
@@ -71,7 +62,8 @@ def graph_data_polar(thetas, rs, fitparams, fit2):
     plt.show()
 
 def deviate(rs, thetas, percentile, dtheta=1):
-    thetas, rs = sort_data(thetas, rs)
+    print("Deviating data...")
+    quickSort(thetas, rs)
     thetas = np.rad2deg(thetas)
 
     ret_thetas = []
@@ -79,7 +71,8 @@ def deviate(rs, thetas, percentile, dtheta=1):
 
     other_index = 0
 
-    for i in range(0, len(thetas)):
+    print("\tRunning deviation algorithm. This may take a while.")
+    for i in tqdm(range(0, len(thetas))):
         theta = thetas[i]
 
         #Set sweep bounds

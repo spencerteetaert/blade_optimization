@@ -1,28 +1,34 @@
 import threading as threading
 import math
 import glob
-import copy
+import time
 
 import cv2
 import numpy as np
 import imutils
 
 import contours as c
-import curves
+from data_io import write_data
 
 ##########################################
 ### User Constants -- Edit as required ###
 ##########################################
-DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data" # Folder where data imaages are located 
+IMAGE_FOLDER_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data" # Folder where images are located 
+IMAGE_DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\example photos.csv" # File (.csv) where image data is kept  
+OUTPUT_DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data" # Folder where saved data should be exported to 
+
 DATA_TYPE = ".JPG"
 LINE_LENGTH = 10 # cm, length of reference line in image
-FAT_DEPTH = 1.2 # cm, the desired fat depth 
+
 RESOLUTION = 50.526 #px/cm, the resolution of the display screen 
 
 #########################################
 ### Program Constants -- Don't change ###
 #########################################
-DATA_PATH += r"\*" + DATA_TYPE
+IMAGE_FOLDER_PATH += r"\*" + DATA_TYPE
+timestr = time.strftime("-%Y%m%d-%H%M%S")
+OUTPUT_DATA_PATH += r"\loin_data" + timestr + ".csv"
+
 STATES = {1: "set_length", 2: "set_angle", 3: "choose_points"}
 state = STATES[1]
 
@@ -39,6 +45,7 @@ chosen_points = []
 
 xs = []
 ys = []
+processed_names = []
 fit_curves = []
 
 def mag(p1, p2):
@@ -70,7 +77,7 @@ def mouse_event(event, pX, pY, flags, param):
                 cv2.line(img, (scale_points[0][0], scale_points[0][1]), (pX, pY), (255, 0, 255), thickness=1)
                 scale = LINE_LENGTH / mag(scale_points[0], scale_points[1])
 
-                print("Scale:", round(scale, 3))
+                print("Image scale:", round(scale, 3), "cm/px")
                 state = STATES[2]
 
         elif state == STATES[2]: # Setting angle 
@@ -84,7 +91,7 @@ def mouse_event(event, pX, pY, flags, param):
                 x = angle_points[1][0] - angle_points[0][0]
                 angle = math.degrees(math.atan(y/x))
 
-                print("Angle:", round(angle, 3))
+                print("Image angle:", round(angle, 3), "°")
                 state = STATES[3]
             
         elif state == STATES[3]:
@@ -122,11 +129,13 @@ def display():
             state = "choose_points"
             chosen_points = []
 
+names = glob.glob(IMAGE_FOLDER_PATH)
+indices = []
 
-for name in glob.glob(DATA_PATH):
+for i in range(0, len(names)):
     # Opens and scales image
-    print("Analyzing", name)
-    img = cv2.imread(name)
+    print("Analyzing", names[i])
+    img = cv2.imread(names[i])
     img = scale_img(img)
 
     # Creates a new thread with target function 
@@ -139,8 +148,6 @@ for name in glob.glob(DATA_PATH):
     if break_flag:
         break
 
-    scale_factor = scale * RESOLUTION
-
     # Scales and rotates image 
     # img = scale_img(img, scale_factor=scale_factor)
     # img = imutils.rotate_bound(img, -angle + 180)
@@ -148,33 +155,25 @@ for name in glob.glob(DATA_PATH):
     # cv2.waitKey(0)
 
     if len(chosen_points) > 2:
-        expanded_contour = c.process_contour(img, chosen_points, scale, scale_factor, angle, FAT_DEPTH)
+        selected_contour = c.adjust_pts(chosen_points, scale, angle)
 
         # Saves contour data
-        x, y = c.extract_data(expanded_contour)
-        xs += list(np.divide(x, RESOLUTION))
-        ys += list(np.divide(y, RESOLUTION))
+        x, y = selected_contour[:,0], selected_contour[:,1]
+        indices += [len(xs)]
+        xs += list(x)
+        ys += list(y)
 
         cv2.destroyAllWindows()
+
+    for j in range(0, len(IMAGE_FOLDER_PATH)):
+        if names[i][0] == IMAGE_FOLDER_PATH[j]:
+            names[i] = names[i][1:]
+    processed_names += [names[i]]
 
     scale_points = []
     angle_points = []
     chosen_points = []
     state = STATES[1]
 
-# Converts gathered data to polar (reduces error on blade edges)
-thetas, rs = curves.cartesian_to_polar(xs, ys)
-thetas2 = copy.deepcopy(thetas)
-rs_deviated = copy.deepcopy(rs)
-thetas2, rs_deviated = curves.deviate(rs_deviated, thetas2, 95)
-
-# Fits 8 degree polynomial to data 
-fit = curves.fit_curve(thetas, rs)
-fit2 = curves.fit_curve(thetas2, rs_deviated)
-# fit = curves.fit_curve(xs, ys)
-
-print("Final fit parameters:\n", fit)
-
-# Graphs curve result
-curves.graph_data_polar(thetas, rs, fit, fit2)
-# curves.graph_data_cartesian(xs, ys, fit)
+write_data(OUTPUT_DATA_PATH, IMAGE_DATA_PATH, processed_names, xs, ys, indices)
+# Do something with xs and ys
