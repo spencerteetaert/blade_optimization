@@ -1,6 +1,7 @@
 import threading as threading
 import math
 import glob
+import copy
 
 import cv2
 import numpy as np
@@ -163,10 +164,17 @@ for name in glob.glob(DATA_PATH):
 
 # Converts gathered data to polar (reduces error on blade edges)
 thetas, rs = curves.cartesian_to_polar(xs, ys)
+thetas2 = copy.deepcopy(thetas)
+rs_deviated = copy.deepcopy(rs)
+thetas2, rs_deviated = curves.deviate(rs_deviated, thetas2, 95)
 
 # Fits 8 degree polynomial to data 
 fit = curves.fit_curve(thetas, rs)
+fit2 = curves.fit_curve(thetas2, rs_deviated)
+# fit = curves.fit_curve(xs, ys)
+
 print("Final fit parameters:\n", fit)
 
 # Graphs curve result
-curves.graph_data_polar(thetas, rs, fit)
+curves.graph_data_polar(thetas, rs, fit, fit2)
+# curves.graph_data_cartesian(xs, ys, fit)

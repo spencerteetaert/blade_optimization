@@ -62,10 +62,17 @@ def shift_left(contour):
     return contour
 
 def shift_up(contour):
-    left_index, right_index = find_indices(contour)
-    shift_factor = min(contour[left_index, 0, 1], contour[right_index, 0, 1])
+    accum = 0
     for pt in contour[:,0,:]:
-        pt[1] -= shift_factor
+        accum += pt[1]
+    accum /= len(contour)
+
+    print("accum", accum)
+
+    for pt in contour[:,0,:]:
+        pt[1] -= accum 
+        pt[1] += 350
+    
     return contour
 
 def scale_contour(contour, scale_factor=1):
