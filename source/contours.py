@@ -1,3 +1,6 @@
+import math
+
+from scipy import stats
 from scipy.interpolate import splprep, splev
 import numpy as np
 import cv2
@@ -35,25 +38,38 @@ def find_indices(contour):
     return left_index, right_index
 
 def crop_top(contour):
+    '''
+        Given a contour, crops the top portion of it that is, 
+        every point above the rightmost and leftmost points 
+    '''
     ret = []
 
     left_index, right_index = find_indices(contour)
 
-    mid_x = (contour[left_index, 0, 0] + contour[right_index, 0, 0])/2
+    mid_x = (contour[left_index, 0, 0] + contour[right_index, 0, 0])/2 
+    width = contour[right_index, 0, 0] - contour[left_index, 0, 0]
+
+    left_boundary =  mid_x + width
+    right_boundary = mid_x - width
+
     left_high = contour[left_index, 0, 1]
     right_high = contour[right_index, 0, 1]
 
     for i in range(0, len(contour[:,0,:])):
-        if contour[i, 0, 0] >= mid_x:
-            if contour[i, 0, 1] >= right_high:
-                ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
-        elif contour[i, 0, 1] >= left_high:
+        if contour[i, 0, 0] >= right_boundary and contour[i, 0, 1] >= right_high:
+            pass
+                # ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
+        elif contour[i, 0, 0] <= left_boundary and contour[i, 0, 1] >= left_high:
+            pass
+                # ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
+        else:
             ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
 
     ret = np.array(ret).reshape((-1, 1, 2)).astype(np.int32)
     return ret
 
-def shift_left(contour):
+def shift_left(contour, alignment_percentile=20):
+    # shift_factor = stats.scoreatpercentile(contour[:,0,0], alignment_percentile)
     left_index, right_index = find_indices(contour)
     shift_factor = contour[left_index, 0, 0] + (contour[right_index, 0, 0] - contour[left_index, 0, 0])/2
 
@@ -61,15 +77,12 @@ def shift_left(contour):
         pt[0] -= shift_factor
     return contour
 
-def shift_up(contour):
-    accum = 0
-    for pt in contour[:,0,:]:
-        accum += pt[1]
-    accum /= len(contour)
+def shift_up(contour, alignment_percentile=10):
+    # shift_factor = stats.scoreatpercentile(contour[:,0,1], alignment_percentile)
+    shift_factor = np.average(contour[:,0,1])
 
     for pt in contour[:,0,:]:
-        pt[1] -= accum 
-        pt[1] += 350
+        pt[1] -= shift_factor 
     
     return contour
 
@@ -132,13 +145,14 @@ def adjust_pts(pts, scale, angle):
         scale == scale of the image (cm/px)
         angle == angle at which the points should be rotated
     '''
+    # Convert to contour 
     contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
 
     # Scales and rotates contour to normalize across pictures 
     contour = scale_contour(contour, 10000)    
-    contour = rotate_contour(contour, -angle + 180)
+    contour = rotate_contour(contour, -angle)
     pts = np.array(contour).reshape((-1, 2)).astype(np.float)
-    pts = scale_pts(pts, scale/10000)    
+    pts = scale_pts(pts, scale/10000) 
 
     return pts
 
@@ -152,34 +166,28 @@ def expand_contour(contour, scale_factor, expansion):
         scale_factor == scale factor of contour to cm (contour / scale_factor = cm)
         expansion == desired expansion distance in cm
     '''
-    print("1:", contour)
     # Smoothes contour and adds resolution 
     contours = smooth_contour([contour])
-    
-    print("2:", contours)
+    # return contours[0] 
 
     # Finds distance transform of drawn contour
-    new_size = (int(max(contours[0][:,0,0]) + expansion/scale_factor + 100), int(max(contours[0][:,0,1]) + expansion/scale_factor + 100), 3)
+    new_size = (int(max(contours[0][:,0,1]) + 100), int(max(contours[0][:,0,0]) + 100), 3)
     temp = np.ones(new_size,dtype=np.uint8)
     cv2.drawContours(temp, contours, 0, (0, 0, 0))
     temp = cv2.cvtColor(temp, cv2.COLOR_BGR2GRAY)
-    dist = cv2.distanceTransform(temp, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+    temp = np.pad(temp, int(expansion*scale_factor), constant_values=1)
 
+    dist = cv2.distanceTransform(temp, cv2.DIST_L2, cv2.DIST_MASK_PRECISE)
+    
     # Finds contour with a specified fat thickness  
-    b = int(expansion/scale_factor) - 0.5
-    t = int(expansion/scale_factor) + 0.5
+    b = int(expansion*scale_factor) - 0.5
+    t = int(expansion*scale_factor) + 0.5
     ring = cv2.inRange(dist, b, t)
     expanded_contours, hierarchy = cv2.findContours(ring, cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
-
-    #### Output format of expanded_contours is off. Not sure why.
-
-    print("4:", expanded_contours[0])
 
     # Find the largest contour (removes chance of inner offset being returned)
     areas = [cv2.contourArea(expanded_contours[i]) for i in range(0, len(expanded_contours))]
     index = areas.index(max(areas))
-
-    print("3:", expanded_contours[index])
 
     return expanded_contours[index]
 
