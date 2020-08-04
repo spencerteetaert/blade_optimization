@@ -3,31 +3,24 @@ import time
 
 from scipy.optimize import curve_fit
 from scipy import stats
+from scipy.integrate import quad
 import matplotlib.pyplot as plt 
 import numpy as np
 from tqdm import tqdm
 
-# from quicksort import quickSort
-
-def func(x, params):
-    return params[0] * x**8 + params[1] * x**7 + params[2] * x**6 + params[3] * x**5 + params[4] * x**4 + params[5] * x**3 + params[6] * x**2 + params[7] * x + params[8]
-
-def func2(x, params):
-    return (params[0] * x**8 + params[1] * x**7 + params[2] * x**6 + params[3] * x**5 + params[4] * x**4 + params[5] * x**3 + params[6] * x**2 + params[7] * x + params[8])**0.5
-
-def poly(x, d, e, f, g, h, i, j, k, l):
-    return d*x**8 + e*x**7 + f*x**6 + g*x**5 + h*x**4 + i*x**3 + j*x**2 + k*x + l
-
 def fit_curve(xs, ys):
     print("Fitting curve to data...\nThis may take a while.")
     start = time.time()
-    data = np.concatenate((xs, ys), axis=0)
-    ret = np.reshape(data, (-1, 2), 'F')
-    np.sort(ret)
+    # params = np.polyfit(xs, ys, 8)    
+    params, _ = curve_fit(func, xs, ys)
+    print("Curve fit with parameters\n", params, "in", round(time.time() - start, 2), "seconds")
+    return params
 
-    popt, pcov = curve_fit(poly, ret[:,0], ret[:,1])
-    print("Curve fit with parameters\n", popt, "in", time.time() - start, "seconds")
-    return popt
+def func(x, a, b, c, d, e, f, g):
+    # fun = np.polyval([a, b, c, d, e, f], x)*x*(x+3.1415)
+    fun = a*(x**8)/8 + 3.1415*a*(x**7)/7 + b*(x**7)/7 + 3.1415*b*(x**6)/6 + c*(x**6)/6 + 3.1415*c*(x**5)/5 + d*(x**5)/5 + \
+        3.1415*d*(x**4)/4 + e*(x**4)/4 + 3.1415*e*(x**3)/3 + f*(x**3)/3 + 3.1415*f*(x**2)/2 + g
+    return fun
 
 def sort_data(xs, ys):
     temp = np.concatenate((xs, ys), axis=0)
@@ -45,32 +38,28 @@ def cartesian_to_polar(x, y):
     r = np.hypot(x, y)
     return theta, r
 
-def graph_data_cartesian(xs, ys, fitparams):
-    # x = np.linspace(np.min(xs), np.max(xs), 1000)
-    # y = func(x, fitparams)
+def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
+    x = np.linspace(-4, 1, 1000)
+    y = func(x, fitparams[0], fitparams[1], fitparams[2], fitparams[3], fitparams[4], fitparams[5], fitparams[6])
+    y2 = func(x, fit2[0], fit2[1], fit2[2], fit2[3], fit2[4], fit2[5], fit2[6])
 
-    m = max(2*np.max(xs), -1*np.min(ys))
+    fig = plt.figure(figsize=(16,8))
+    ax = fig.add_subplot(121)
+    ax.plot(x, y, c="pink", linewidth=1)
+    ax.plot(x, y2, c="red", linewidth=5)
+    ax.scatter(xs, ys, s=0.1, c="lightblue")
+    ax.scatter(xs2, ys2, s=0.5, c="black")
+    ax.scatter([-math.pi, 0], [10.16, 10.16], c="black", s=15)
+    ax.axis([-4, 1, -10, 50])
 
-    plt.rcParams["figure.figsize"] = (8,8)
-    # plt.plot(x, y, c="red", linewidth=5)
-    plt.scatter(xs, ys, s=1)
-    plt.axis([0, 25, 0, 25])
-    plt.show()
+    ax2 = fig.add_subplot(122, polar=True)
+    ax2.plot(x, y, c="pink", linewidth=1)
+    ax2.plot(x, y2, c="red", linewidth=5)
+    ax2.scatter(xs, ys, c="lightblue",s=0.1)
+    ax2.scatter(xs2, ys2, c="black",s=0.5)
+    ax2.scatter([-math.pi, 0], [10.16, 10.16], c="black", s=15)
+    ax2.axis([-math.pi, 0, 0, 20])
 
-def graph_data_polar(thetas1, rs1, thetas2, rs2, fitparams, fit2):
-    # t = np.linspace(np.min(thetas1), np.max(thetas1), 1000)
-    # r = func(t, fitparams)
-    # r2 = func(t, fit2)
-
-    fig = plt.figure(figsize=(8, 8))
-    ax = fig.add_subplot(111, polar=True)
-
-    # ax.rcParams["figure.figsize"] = (8,8)
-    # plt.polar(t, r, c="pink", linewidth=1)
-    # plt.polar(t, r2, c="red", linewidth=5)
-    ax.scatter(thetas1, rs1, c="lightblue",s=2)
-    ax.scatter(thetas2, rs2, c="red",s=5)
-    ax.axis([-math.pi, 0, 0, 12])
     plt.show()
 
 def deviate(thetas, rs, percentile, dtheta=1):
@@ -122,8 +111,8 @@ def deviate(thetas, rs, percentile, dtheta=1):
         if count != 0:
             mean = np.mean(in_wedge_rs)
             val = stats.scoreatpercentile(in_wedge_rs, percentile)
-            ret_rs += list(np.add(in_wedge_rs, val - mean))
-            ret_thetas += in_wedge_thetas
+            ret_rs += [rs[i] + val - mean]
+            ret_thetas += [thetas[i]]
 
     # return polar_to_cartesian(ret_thetas, ret_rs)
     return np.deg2rad(ret_thetas), ret_rs
@@ -138,9 +127,6 @@ def find_radial_mean(thetas, rs, dtheta=1):
 
     thetas, rs = sort_data(thetas, rs)
     thetas = np.rad2deg(thetas)
-
-    print("THETAS", thetas)
-    print("RS", rs)
 
     ret_thetas = []
     ret_rs = []

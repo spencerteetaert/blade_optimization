@@ -139,3 +139,5 @@ def gen_fig_array(xs, ys):
     ret = figure_to_array(fig)
     plt.close(fig)
     return ret
+
+

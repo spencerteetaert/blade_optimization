@@ -5,20 +5,19 @@ from scipy.interpolate import splprep, splev
 import numpy as np
 import cv2
 
-def smooth_contour(contours):
-    ret = []
-    for contour in contours:
-        x, y = contour.T
+def smooth_contour(contour):
+    x, y = contour.T
 
-        x = x.tolist()[0]
-        y = y.tolist()[0]
+    x = x.tolist()[0]
+    y = y.tolist()[0]
 
-        tck, u = splprep([x,y], u=None, s=1.0, per=1)
-        u_new = np.linspace(u.min(), u.max(), 75)
-        x_new, y_new = splev(u_new, tck, der=0)
-        res_array = [[[int(i[0]), int(i[1])]] for i in zip(x_new,y_new)]
+    tck, u = splprep([x,y], u=None, s=1.0, per=1)
+    u_new = np.linspace(u.min(), u.max(), 75)
+    x_new, y_new = splev(u_new, tck, der=0)
+    res_array = [[[int(i[0]), int(i[1])]] for i in zip(x_new,y_new)]
 
-        ret.append(np.asarray(res_array, dtype=np.int32))
+    ret = np.asarray(res_array, dtype=np.int32)
+
     return ret
 
 def find_indices(contour):
@@ -146,14 +145,30 @@ def adjust_pts(pts, scale, angle):
         angle == angle at which the points should be rotated
     '''
     # Convert to contour 
-    contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
+    contour = pts_to_contour(pts)
 
     # Scales and rotates contour to normalize across pictures 
     contour = scale_contour(contour, 10000)    
     contour = rotate_contour(contour, -angle)
-    pts = np.array(contour).reshape((-1, 2)).astype(np.float)
+    pts = contour_to_pts(contour)
     pts = scale_pts(pts, scale/10000) 
 
+    return pts
+
+def pts2_to_contour(pts_x, pts_y):
+    contour = np.array([[[pts_x[i], pts_y[i]]] for i in range(0, len(pts_x))], dtype=np.int32)
+    return contour 
+
+def contour_to_pts2(contour):
+    pts = np.array(contour).reshape((-1, 2)).astype(np.float)
+    return pts[0], pts[1]
+
+def pts_to_contour(pts):
+    contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
+    return contour 
+
+def contour_to_pts(contour):
+    pts = np.array(contour).reshape((-1, 2)).astype(np.float)
     return pts
 
 def expand_contour(contour, scale_factor, expansion):
@@ -167,13 +182,13 @@ def expand_contour(contour, scale_factor, expansion):
         expansion == desired expansion distance in cm
     '''
     # Smoothes contour and adds resolution 
-    contours = smooth_contour([contour])
-    # return contours[0] 
+    contour = smooth_contour(contour)
+    # return contour[0] 
 
     # Finds distance transform of drawn contour
-    new_size = (int(max(contours[0][:,0,1]) + 100), int(max(contours[0][:,0,0]) + 100), 3)
+    new_size = (int(max(contour[:,0,1]) + 100), int(max(contour[0][:,0,0]) + 100), 3)
     temp = np.ones(new_size,dtype=np.uint8)
-    cv2.drawContours(temp, contours, 0, (0, 0, 0))
+    cv2.drawContours(temp, [contour], 0, (0, 0, 0))
     temp = cv2.cvtColor(temp, cv2.COLOR_BGR2GRAY)
     temp = np.pad(temp, int(expansion*scale_factor), constant_values=1)
 

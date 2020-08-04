@@ -2,6 +2,7 @@ import threading as threading
 import math
 import glob
 import time
+import copy
 
 import cv2
 import numpy as np
@@ -9,6 +10,7 @@ import imutils
 
 import contours as c
 from data_io import write_data
+import geometry
 
 ##########################################
 ### User Constants -- Edit as required ###
@@ -29,7 +31,7 @@ IMAGE_FOLDER_PATH += r"\*" + DATA_TYPE
 timestr = time.strftime("-%Y%m%d-%H%M%S")
 OUTPUT_DATA_PATH += r"\loin_data" + timestr + ".csv"
 
-STATES = {1: "set_length", 2: "set_angle", 3: "choose_points"}
+STATES = {1: "Setting Length", 2: "Setting Angle", 3: "Choosing Points"}
 state = STATES[1]
 
 break_flag = False
@@ -39,6 +41,7 @@ mouseY = 0
 
 scale = 0 # cm/px 
 angle = 0 # degrees
+current_fat_thickness = 2.0
 scale_points = []
 angle_points = []
 chosen_points = []
@@ -66,15 +69,12 @@ def scale_img(img, width=1000, scale_factor=None):
 
 
 def mouse_event(event, pX, pY, flags, param):
-    global img, state, scale, angle, mouse_down, mouseX, mouseY, scale_points, angle_points, chosen_points
+    global img, state, scale, angle, mouse_down, mouseX, mouseY, scale_points, angle_points, chosen_points, current_fat_thickness
 
     if event == cv2.EVENT_LBUTTONUP:
-        mouse_down = False
         if state == STATES[1]: # Setting scale 
             scale_points += [[pX, pY]]
-            cv2.circle(img, (pX, pY), 1, (255, 0, 255), thickness=2)
             if len(scale_points) == 2:
-                cv2.line(img, (scale_points[0][0], scale_points[0][1]), (pX, pY), (255, 0, 255), thickness=1)
                 scale = LINE_LENGTH / mag(scale_points[0], scale_points[1])
 
                 print("Image scale:", round(scale, 3), "cm/px")
@@ -82,11 +82,8 @@ def mouse_event(event, pX, pY, flags, param):
 
         elif state == STATES[2]: # Setting angle 
             angle_points += [[pX, pY]]
-            cv2.circle(img, (pX, pY), 1, (255, 0, 0), thickness=2)
 
             if len(angle_points) == 2:
-                cv2.line(img, (angle_points[0][0], angle_points[0][1]), (pX, pY), (255, 0, 0), thickness=1)
-
                 y = angle_points[1][1] - angle_points[0][1]
                 x = angle_points[1][0] - angle_points[0][0]
                 angle = math.degrees(math.atan(y/x))
@@ -94,40 +91,92 @@ def mouse_event(event, pX, pY, flags, param):
                 print("Image angle:", round(angle, 3), "°")
                 state = STATES[3]
             
-        elif state == STATES[3]:
-            cv2.circle(img, (pX, pY), 1, (255, 255, 0), thickness=2)
-            chosen_points += [[pX, pY]]
+        elif state == STATES[3]: # Choosing points
+            to_add = geometry.expand_for_fat([pX, pY], mouse_down, current_fat_thickness/scale)
+            chosen_points += [to_add]
 
-    elif state == STATES[2] and mouse_down:
-        if event == cv2.EVENT_MOUSEMOVE:
-            pass
-            # cv2.line(img, (angle_points[0][0], angle_points[0][1]), (pX, pY), (255, 0, 0))
+        mouse_down = []
+
+    elif state == STATES[3]:
+        if event == cv2.EVENT_LBUTTONDOWN:
+            mouse_down = [pX, pY]
+
+    # elif state == STATES[2] and mouse_down:
+    #     if event == cv2.EVENT_MOUSEMOVE:
+    #         pass
+    #         # cv2.line(img, (angle_points[0][0], angle_points[0][1]), (pX, pY), (255, 0, 0))
 
 def display():
-    global img, break_flag, state, scale_points, angle_points, chosen_points
+    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness
 
     cv2.imshow("Image", img)
     cv2.setMouseCallback("Image", mouse_event)
     while True:
-        cv2.imshow("Image", img)
-        k = cv2.waitKey(1) & 0xFF
-        if k == ord('n'):
+        canvas = copy.deepcopy(img)
+        draw(canvas)
+        cv2.imshow("Image", canvas)
+        t = cv2.waitKeyEx(1)
+        if t == 110: # n
             cv2.destroyWindow("Image")
             break
-        elif k == ord('q'):
+        elif t == 113: # q
             cv2.destroyWindow("Image")
             break_flag = True
             break
 
-        elif k == ord('l'):
-            state = "set_length"
+        elif t == 108: # l
+            state = "Setting Length"
             scale_points = []
-        elif k == ord('a'):
-            state = "set_angle"
+        elif t == 97: # a
+            state = "Setting Angle"
             angle_points = []
-        elif k == ord('c'):
-            state = "choose_points"
+        elif t == 99: # c
+            state = "Choosing Points"
             chosen_points = []
+        elif t == 2490368: # up arrow
+            # current_fat_thickness += 0.1
+            current_fat_thickness = 2.5
+        elif t == 2621440: # down arrow
+            # current_fat_thickness -= 0.1
+            current_fat_thickness = 1.2
+        elif t == 100: # D
+            if state == STATES[1]:
+                scale_points = scale_points[:-1]
+            elif state == STATES[2]:
+                angle_points = angle_points[:-1]
+            elif state == STATES[3]:
+                chosen_points = chosen_points[:-1]
+
+def draw(canvas):
+    global state, scale_points, angle_points, chosen_points, current_fat_thickness
+
+    msg = "Current state:" + state + "\nFat thickness:" + str(round(current_fat_thickness, 1)) + "mm\n"
+
+    font = cv2.FONT_HERSHEY_SIMPLEX
+    y0, dy = 30, 18
+    for i, line in enumerate(msg.split('\n')):
+        y = y0 + i*dy
+        try:
+            if (line[0] == '\t'):
+                cv2.putText(canvas, line[1:], (25, y), font, 0.6, (100,100, 100))
+            else:
+                cv2.putText(canvas, line, (15, y), font, 0.6, (0, 0, 0))
+        except:
+            cv2.putText(canvas, line, (15, y), font, 0.6, (0, 0, 0))
+
+    for i in range(0, len(scale_points)):
+        cv2.circle(canvas, (scale_points[i][0], scale_points[i][1]), 3, (255,255,255))
+    if len(scale_points) >= 2:
+        cv2.line(canvas, (scale_points[0][0], scale_points[0][1]), (scale_points[1][0], scale_points[1][1]), (255,255,255),3)
+        
+    for i in range(0, len(angle_points)):
+        cv2.circle(canvas, (angle_points[i][0], angle_points[i][1]), 3, (0,255,255))
+    if len(angle_points) >= 2:
+        cv2.line(canvas, (angle_points[0][0], angle_points[0][1]), (angle_points[1][0], angle_points[1][1]), (0,255,255),1)
+
+    for i in range(0, len(chosen_points)):
+        cv2.circle(canvas, (int(chosen_points[i][0]), int(chosen_points[i][1])), 3, (0,0,0))
+
 
 names = glob.glob(IMAGE_FOLDER_PATH)
 indices = []
@@ -165,14 +214,18 @@ for i in range(0, len(names)):
 
         cv2.destroyAllWindows()
 
-    for j in range(0, len(IMAGE_FOLDER_PATH)):
-        if names[i][0] == IMAGE_FOLDER_PATH[j]:
-            names[i] = names[i][1:]
-    processed_names += [names[i]]
+        for j in range(0, len(IMAGE_FOLDER_PATH)):
+            if names[i][0] == IMAGE_FOLDER_PATH[j]:
+                names[i] = names[i][1:]
+        processed_names += [names[i]]
+    else:
+        print("ERR: Not enough data points chosen. Image data was not saved.")
 
     scale_points = []
     angle_points = []
     chosen_points = []
+    circle_pts = []
+    center_pt = []
     state = STATES[1]
 
 write_data(OUTPUT_DATA_PATH, IMAGE_DATA_PATH, processed_names, xs, ys, indices)
