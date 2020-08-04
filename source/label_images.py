@@ -150,7 +150,7 @@ def display():
 def draw(canvas):
     global state, scale_points, angle_points, chosen_points, current_fat_thickness
 
-    msg = "Current state:" + state + "\nFat thickness:" + str(round(current_fat_thickness, 1)) + "mm\n"
+    msg = "Current state:" + state + "\nFat thickness:" + str(round(current_fat_thickness*10)) + "mm\n"
 
     font = cv2.FONT_HERSHEY_SIMPLEX
     y0, dy = 30, 18
