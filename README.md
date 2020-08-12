@@ -28,8 +28,8 @@ A library with various geometric functions for finding different variables.
 
 ### process_data.py 
 This file is what takes the labelled data and generates a shape. It does this through a series of steps:
-* Load in the labelled data and smooth it. This accounts for random variation in the biology of plants and aids in creating a design that is manufacturable. 
-* Remove any points that are irrelevant to ana actual cut. These are any points that the blade will not be able to cut, such as above the piece of meat. 
+* Load in the labelled data and smooth it. This accounts for random variation due to product biology and aids in creating a design that is manufacturable. 
+* Remove any points that are irrelevant to an actual cut. These are any points that the blade will not be able to cut, such as above the piece of meat. 
 * Combine and align the resultant set of points on a polar axis 
 * "Deviate" the points. This step takes each point and extends its radius to the 90th percentile of the surrounding points. This accounts for variation in loin shape and sizes.
 * Fit a curve to the data with the following physical constraints to fulfill blade mounting requirements:
