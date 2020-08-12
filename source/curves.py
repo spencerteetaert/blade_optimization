@@ -49,7 +49,7 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
     ax.plot(x, y2, c="red", linewidth=5)
     ax.scatter(xs, ys, s=0.1, c="lightblue")
     ax.scatter(xs2, ys2, s=0.5, c="black")
-    ax.scatter([-math.pi, 0], [10.16, 10.16], c="black", s=15)
+    ax.scatter([-math.pi*37/45, 0], [12.426, 10.16], c="black", s=45)
     ax.axis([-4, 1, -10, 50])
 
     ax2 = fig.add_subplot(122, polar=True)
@@ -57,7 +57,7 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
     ax2.plot(x, y2, c="red", linewidth=5)
     ax2.scatter(xs, ys, c="lightblue",s=0.1)
     ax2.scatter(xs2, ys2, c="black",s=0.5)
-    ax2.scatter([-math.pi, 0], [10.16, 10.16], c="black", s=15)
+    ax2.scatter([-math.pi*37/45, 0], [12.426, 10.16], c="black", s=45)
     ax2.axis([-math.pi, 0, 0, 20])
 
     plt.show()

@@ -13,6 +13,7 @@ def load_data(data_path):
     xs = []
     ys = []
     indices = []
+    alignment_points = []
 
     # Reads 
     for line in data:
@@ -30,12 +31,14 @@ def load_data(data_path):
             while True:
                 ys += [float(line_data[index])]
                 index += 1
-                if (index >= len(line_data)):
+                if (line_data[index] == ''):
+                    index += 1
                     break
-    
-    return header, image_data, xs, ys, indices
+            alignment_points += [[float(line_data[index]), float(line_data[index+1])]]
+            
+    return header, image_data, xs, ys, indices, alignment_points
 
-def write_data(write_path, data_path, image_names, xs, ys, indices):
+def write_data(write_path, data_path, image_names, xs, ys, indices, peak_points):
     print("Writing data to", write_path)
     temp = []
 
@@ -67,8 +70,15 @@ def write_data(write_path, data_path, image_names, xs, ys, indices):
                 to_write += xs[indices[i]:indices[i+1]]
                 to_write += [''] 
                 to_write += ys[indices[i]:indices[i+1]]
+                to_write += [''] 
+                to_write += [peak_points[i][0]]
+                to_write += [peak_points[i][1]]
             except:
                 to_write += xs[indices[i]:len(xs)]
                 to_write += [''] 
                 to_write += ys[indices[i]:len(ys)]
+                to_write += [''] 
+                to_write += [peak_points[i][0]]
+                to_write += [peak_points[i][1]]
+
             writer.writerow(to_write)

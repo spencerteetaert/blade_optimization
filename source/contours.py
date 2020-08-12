@@ -89,7 +89,6 @@ def scale_contour(contour, scale_factor=1):
     for pt in contour[:,0,:]:
         pt[0] *= scale_factor
         pt[1] *= scale_factor
-    print(contour)
     return contour
 
 def scale_pts(pts, scale_factor=1):
@@ -108,10 +107,12 @@ def polar_to_cartesian(theta, r):
     y = r * np.sin(theta)
     return x, y
 
-def rotate_contour(contour, angle):
-    M = cv2.moments(contour)
-    cx = int(M['m10']/M['m00'])
-    cy = int(M['m01']/M['m00'])
+def rotate_contour(contour, angle, cx=None, cy=None):
+    if cx is None or cy is None:
+        # If no rotation point sepcified, rotate around the center of the contour
+        M = cv2.moments(contour)
+        cx = int(M['m10']/M['m00'])
+        cy = int(M['m01']/M['m00'])
 
     normalized_contour = contour - [cx, cy]
     
@@ -129,10 +130,17 @@ def rotate_contour(contour, angle):
     normalized_contour[:, 0, 1] = ys
 
     rotated_contour = normalized_contour + [cx, cy]
-    print(rotated_contour)
     # rotated_contour = rotated_contour.astype(np.int32)
 
     return rotated_contour
+
+def rotate_points(xs, ys, angle, cx=None, cy=None):
+    points = [[xs[i]*10000, ys[i]*10000] for i in range(0, len(xs))]
+    ctr = pts_to_contour(points)
+    ctr = sort_contour(ctr)
+    rotated_ctr = rotate_contour(ctr, angle, cx*10000, cy*10000)
+    ret = contour_to_pts(rotated_ctr)
+    return np.divide(ret[:,0], 10000), np.divide(ret[:,1], 10000)
 
 def adjust_pts(pts, scale, angle):
     '''
@@ -161,7 +169,7 @@ def pts2_to_contour(pts_x, pts_y):
 
 def contour_to_pts2(contour):
     pts = np.array(contour).reshape((-1, 2)).astype(np.float)
-    return pts[0], pts[1]
+    return pts[:,0], pts[:,1]
 
 def pts_to_contour(pts):
     contour = np.array(pts).reshape((-1, 1, 2)).astype(np.int32)
@@ -213,3 +221,15 @@ def shift_contour(contour):
     contour = shift_up(contour)
 
     return contour
+
+def sort_data(xs, ys):
+    temp = np.concatenate((xs, ys), axis=0)
+    temp = np.reshape(temp, (-1, 2), 'F')
+    i = np.argsort(xs)
+    return temp[i,0], temp[i,1]
+
+def sort_contour(contour):
+    xs, ys = contour_to_pts2(contour)
+    xs, ys = sort_data(xs, ys)
+    ret = pts2_to_contour(xs, ys)
+    return ret
