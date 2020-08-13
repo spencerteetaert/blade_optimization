@@ -13,7 +13,7 @@ FAT_DEPTH = 1.2 # cm, the desired fat depth along the loin sw
 FAT_DEPTH_SECONDARY = 2.0 # cm, the desired fat depth along the secondary muscle 
 MEASUREMNET_DECMINAL_POINTS = 2
 SCALE_FACTOR = 10**MEASUREMNET_DECMINAL_POINTS
-DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data\loin_data-20200812-090743.csv"
+DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data\loin_data-20200812-140040.csv"
 
 resultant_xs = []
 resultant_ys = []
@@ -26,7 +26,7 @@ pts = [[loaded_xs[i], loaded_ys[i]] for i in range(0, len(loaded_xs))]
 # pts = contours.scale_pts(pts, SCALE_FACTOR)
 pts = np.array(pts)
 
-# Expand contour for each curvedd
+# Expand contour for each curve
 for i in range(0, len(indices)):    
     if i + 1 < len(indices):
         pts_x, pts_y = pts[indices[i]:indices[i+1],0], pts[indices[i]:indices[i+1],1]
@@ -50,14 +50,14 @@ for i in range(0, len(indices)):
     resultant_indices += [len(resultant_xs)]
     # resultant_xs += list(-1*expanded_pts[:,0]) 
     # resultant_ys += list(expanded_pts[:,1])
-    resultant_xs += list(-1*pts_x)
+    resultant_xs += list(pts_x)
     resultant_ys += list(pts_y)
 
 # Opens a window to manually align data for shape alignment 
 resultant_xs, resultant_ys = align_data(resultant_xs, resultant_ys, resultant_indices, alignment_points)
 
 # Centers data below the 0° axis 
-shift_factor = min(resultant_ys) + 11.7
+shift_factor = min(resultant_ys) + 12.3
 resultant_ys = np.add(resultant_ys, -1*shift_factor) 
 shift_factor = 0.381 # From measurement from blade edge to driving chain
 resultant_xs = np.add(resultant_xs, -1*shift_factor)

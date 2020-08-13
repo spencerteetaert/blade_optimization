@@ -29,12 +29,12 @@ def align_data(xs, ys, indices, alignment_points):
     matplotlib.use('Agg')
     global master_xs, master_ys, break_flag, shift_factor_x, shift_factor_y
     
-    xs[indices[0]:indices[1]] = np.add(xs[indices[0]:indices[1]], alignment_points[0][0]) 
+    # xs[indices[0]:indices[1]] = np.add(xs[indices[0]:indices[1]], alignment_points[0][0]) 
 
-    master_xs = xs[indices[0]:indices[1]]
-    master_ys = ys[indices[0]:indices[1]]
+    # master_xs = xs[indices[0]:indices[1]]
+    # master_ys = ys[indices[0]:indices[1]]
 
-    for i in range(1, len(indices)): 
+    for i in range(0, len(indices)): 
         if i + 1 < len(indices):
             slice_xs = xs[indices[i]:indices[i+1]]
             slice_ys = ys[indices[i]:indices[i+1]]
@@ -43,7 +43,8 @@ def align_data(xs, ys, indices, alignment_points):
             slice_ys = ys[indices[i]:len(ys)]
 
         slice_xs, slice_ys = curves.sort_data(slice_xs, slice_ys)
-        slice_xs = np.add(slice_xs, alignment_points[i][0])
+        slice_xs = np.add(slice_xs, -1*alignment_points[i][0])
+        alignment_points[i][0] = 0
 
         # Creates a new thread with target function 
         t = threading.Thread(target = display, args=[slice_xs, slice_ys, alignment_points[i]])
@@ -56,10 +57,13 @@ def align_data(xs, ys, indices, alignment_points):
         else:
             if i + 1 < len(indices):
                 # xs[indices[i]:indices[i+1]] = np.add(xs[indices[i]:indices[i+1]], -1*alignment_points[i])#shift_factor_x)
-                xs[indices[i]:indices[i+1]], ys[indices[i]:indices[i+1]], _, _ = gen_disp_pts(slice_xs, slice_ys, 0, alignment_points[i][1])
+                xs[indices[i]:indices[i+1]], ys[indices[i]:indices[i+1]], _, _ = gen_disp_pts(slice_xs, slice_ys, alignment_points[i][0], alignment_points[i][1])
             else:
                 # xs[indices[i]:len(xs)] = np.add(xs[indices[i]:len(xs)], -1*alignment_points[i])# shift_factor_x)
-                xs[indices[i]:len(xs)], ys[indices[i]:len(xs)], _, _ = gen_disp_pts(slice_xs, slice_ys, 0, alignment_points[i][1])
+                xs[indices[i]:len(xs)], ys[indices[i]:len(xs)], _, _ = gen_disp_pts(slice_xs, slice_ys, alignment_points[i][0], alignment_points[i][1])
+
+        master_xs = xs[indices[0]:indices[1]]
+        master_ys = ys[indices[0]:indices[1]]
 
     matplotlib.use('TkAgg')
     return xs, ys
@@ -71,7 +75,7 @@ def display(xs, ys, alignment_point):
     shift_factor_y = 0
     shift_factor_angle = 0
 
-    disp_xs, disp_ys, cx, cy = gen_disp_pts(xs, ys, 0, alignment_point[1])
+    disp_xs, disp_ys, cx, cy = gen_disp_pts(xs, ys, alignment_point[0], alignment_point[1])
 
     img = gen_fig_array(disp_xs, disp_ys, cx, cy)
     cv2.imshow("Image", img)
@@ -79,37 +83,45 @@ def display(xs, ys, alignment_point):
     while True:
         cv2.imshow("Image", img)
         t = cv2.waitKeyEx(0)
-        if t == 110: # n
+        if t == 32: # space
             cv2.destroyWindow("Image")
             break
 
         #Fine control 
         elif t == 2424832: #left
-            shift_factor_angle += .5
+            shift_factor_angle -= 5
             refresh(xs, ys, alignment_point[0], alignment_point[1])
         elif t == 2490368: #up 
             shift_factor_y += .1
             refresh(xs, ys, alignment_point[0], alignment_point[1])
         elif t == 2555904: #right
-            shift_factor_angle -= .5
+            shift_factor_angle += 5
             refresh(xs, ys, alignment_point[0], alignment_point[1])
         elif t == 2621440: #down
             shift_factor_y -= .1
             refresh(xs, ys, alignment_point[0], alignment_point[1])
 
         #Coarse control
-        elif t == 97: #left
-            shift_factor_angle += 5
-            refresh(xs, ys, alignment_point[0], alignment_point[1])
-        elif t == 119: #up 
+        elif t == 119: #w 
             shift_factor_y += 1
             refresh(xs, ys, alignment_point[0], alignment_point[1])
-        elif t == 100: #right
-            shift_factor_angle -= 5
+        elif t == 97: #a
+            shift_factor_x -= 1
             refresh(xs, ys, alignment_point[0], alignment_point[1])
-        elif t == 115: #down
+        elif t == 115: #s
             shift_factor_y -= 1
             refresh(xs, ys, alignment_point[0], alignment_point[1])
+        elif t == 100: #d
+            shift_factor_x += 1
+            refresh(xs, ys, alignment_point[0], alignment_point[1])
+
+        elif t == 122: #z
+            shift_factor_angle -= 5
+            refresh(xs, ys, alignment_point[0], alignment_point[1])       
+        elif t == 99: #c
+            shift_factor_angle += 5
+            refresh(xs, ys, alignment_point[0], alignment_point[1])    
+
         elif t == 113: # q
             cv2.destroyWindow("Image")
             break_flag = True
@@ -118,7 +130,7 @@ def display(xs, ys, alignment_point):
 def refresh(xs, ys, cx, cy):
     global img
 
-    disp_xs, disp_ys, cx, cy = gen_disp_pts(xs, ys, 0, cy)
+    disp_xs, disp_ys, cx, cy = gen_disp_pts(xs, ys, cx, cy)
 
     img = gen_fig_array(disp_xs, disp_ys, cx, cy)
     cv2.imshow("Image", img)
@@ -132,6 +144,9 @@ def gen_fig_array(xs, ys, cx, cy):
     ax.scatter(master_xs, master_ys, color='black')
     ax.scatter(xs, ys, color='blue') 
     ax.scatter(cx, cy, color='green') 
+    ax.plot([0, 0], [-5, 25], color='green')
+    ax.plot([10.541, 10.541], [-5, 25])
+    ax.plot([-9.779, -9.779], [-5, 25])
     ax.axis([-15, 15, -5, 25])
 
     fig.tight_layout()
