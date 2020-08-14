@@ -8,16 +8,15 @@ import cv2
 import numpy as np
 import imutils
 
-import contours as c
-from data_io import write_data
-import geometry
+from . import contours as c
+from .data_io import write_data
+from . import geometry
 
 ##########################################
 ### User Constants -- Edit as required ###
 ##########################################
-IMAGE_FOLDER_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data" # Folder where images are located 
-IMAGE_DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\example photos.csv" # File (.csv) where image data is kept  
-OUTPUT_DATA_PATH = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data" # Folder where saved data should be exported to 
+IMAGE_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data\Good Images" # Folder where images are located 
+OUTPUT_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data" # Folder where saved data should be exported to 
 
 DATA_TYPE = ".JPG"
 LINE_LENGTH = 10 # cm, length of reference line in image
@@ -27,9 +26,6 @@ RESOLUTION = 50.526 #px/cm, the resolution of the display screen
 #########################################
 ### Program Constants -- Don't change ###
 #########################################
-IMAGE_FOLDER_PATH += r"\*" + DATA_TYPE
-timestr = time.strftime("-%Y%m%d-%H%M%S")
-OUTPUT_DATA_PATH += r"\loin_data" + timestr + ".csv"
 
 STATES = {1: "Setting Length", 2: "Setting Angle", 3: "Choosing Points", 4: "Choosing Peak"}
 state = STATES[1]
@@ -38,6 +34,7 @@ break_flag = False
 mouse_down = False
 mouseX = 0
 mouseY = 0
+img = 0
 
 scale = 0 # cm/px 
 angle = 0 # degrees
@@ -80,7 +77,7 @@ def mouse_event(event, pX, pY, flags, param):
                 scale = LINE_LENGTH / mag(scale_points[0], scale_points[1])
 
                 print("Image scale:", round(scale, 3), "cm/px")
-                state = STATES[2]
+                state = STATES[4]
 
         elif state == STATES[4]: # Setting Peak point 
             peak_point = [pX, pY]
@@ -126,11 +123,11 @@ def display():
             peak_point = [0, 0]
 
         elif t == 119: # w
-            # current_fat_thickness += 0.1
-            current_fat_thickness = 2.5
+            current_fat_thickness += 0.1
+            current_fat_thickness = min(current_fat_thickness, 5)
         elif t == 115: # s
-            # current_fat_thickness -= 0.1
-            current_fat_thickness = 1.2
+            current_fat_thickness -= 0.1
+            current_fat_thickness = max(current_fat_thickness, 0)
 
         elif t == 97: # a
             angle += 1
@@ -181,61 +178,72 @@ def draw(canvas):
         cv2.circle(canvas, (int(peak_point[0]), int(peak_point[1])), 3, (0,0,0), 5)
 
     if state == STATES[2]:
-        ret = imutils.rotate_bound(canvas, -angle + 180)
+        ret = imutils.rotate_bound(canvas, -angle)
         return ret
     else:
         return canvas
 
-names = glob.glob(IMAGE_FOLDER_PATH)
-indices = []
 
-for i in range(0, len(names)):
-    # Opens and scales image
-    print("Analyzing", names[i])
-    img = cv2.imread(names[i])
-    img = scale_img(img)
+def main(image_folder=IMAGE_FOLDER, data_type=DATA_TYPE, output_folder=OUTPUT_FOLDER):
+    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness, angle, peak_point, processed_names, xs, ys, peak_points
 
-    # Creates a new thread with target function 
-    t = threading.Thread(target = display, args=[])
-    t.daemon = True
-    t.start()
-    t.join()
+    image_folder += r"\*" + data_type
+    timestr = time.strftime("-%Y%m%d-%H%M%S")
+    output_folder += r"\loin_data" + timestr + ".csv"
 
-    # Breaks program if user quits
-    if break_flag:
-        break
+    names = glob.glob(image_folder)
+    indices = []
 
-    if len(chosen_points) > 2:
-        chosen_points += [peak_point]
-        selected_contour = c.adjust_pts(chosen_points, scale, angle)
-        peak_point = selected_contour[-1]
-        selected_contour = selected_contour[:-1]
+    for i in range(0, len(names)):
+        # Opens and scales image
+        print("Analyzing", names[i])
+        img = cv2.imread(names[i])
+        img = scale_img(img)
 
-        # Saves contour data
-        x, y = selected_contour[:,0], selected_contour[:,1]
-        indices += [len(xs)]
-        xs += list(x)
-        ys += list(y)
-        peak_points += [peak_point]
+        # Creates a new thread with target function 
+        t = threading.Thread(target = display, args=[])
+        t.daemon = True
+        t.start()
+        t.join()
 
-        cv2.destroyAllWindows()
+        # Breaks program if user quits
+        if break_flag:
+            break
 
-        for j in range(0, len(IMAGE_FOLDER_PATH)):
-            if names[i][0] == IMAGE_FOLDER_PATH[j]:
-                names[i] = names[i][1:]
-        processed_names += [names[i]]
+        if len(chosen_points) > 2:
+            chosen_points += [peak_point]
+            selected_contour = c.adjust_pts(chosen_points, scale, angle)
+            peak_point = selected_contour[-1]
+            selected_contour = selected_contour[:-1]
+
+            # Saves contour data
+            x, y = selected_contour[:,0], selected_contour[:,1]
+            indices += [len(xs)]
+            xs += list(x)
+            ys += list(y)
+            peak_points += [peak_point]
+
+            cv2.destroyAllWindows()
+
+            for j in range(0, len(image_folder)):
+                if names[i][0] == image_folder[j]:
+                    names[i] = names[i][1:]
+            processed_names += [names[i]]
+        else:
+            print("ERR: Not enough data points chosen. Image data was not saved.")
+
+        scale_points = []
+        angle_points = []
+        peak_point = [0, 0]
+        chosen_points = []
+        circle_pts = []
+        center_pt = []
+        state = STATES[1]
+
+    if len(processed_names) > 0:
+        write_data(output_folder, processed_names, xs, ys, indices, peak_points)
     else:
-        print("ERR: Not enough data points chosen. Image data was not saved.")
+        print("No writable data found.")
 
-    scale_points = []
-    angle_points = []
-    peak_point = [0, 0]
-    chosen_points = []
-    circle_pts = []
-    center_pt = []
-    state = STATES[1]
-
-if len(processed_names) > 0:
-    write_data(OUTPUT_DATA_PATH, IMAGE_DATA_PATH, processed_names, xs, ys, indices, peak_points)
-else:
-    print("No writable data found.")
+if __name__=="__main__":
+    main()
