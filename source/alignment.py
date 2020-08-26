@@ -26,14 +26,9 @@ def figure_to_array(fig:plt.figure):
     return ret[:,:,1:4]
 
 def align_data(xs, ys, indices, alignment_points):
-    matplotlib.use('Agg')
     global master_xs, master_ys, break_flag, shift_factor_x, shift_factor_y, skip_flag
+    matplotlib.use('Agg')
     
-    # xs[indices[0]:indices[1]] = np.add(xs[indices[0]:indices[1]], alignment_points[0][0]) 
-
-    # master_xs = xs[indices[0]:indices[1]]
-    # master_ys = ys[indices[0]:indices[1]]
-
     for i in range(0, len(indices)): 
         if i + 1 < len(indices):
             slice_xs = xs[indices[i]:indices[i+1]]
@@ -45,7 +40,6 @@ def align_data(xs, ys, indices, alignment_points):
         slice_xs, slice_ys = curves.sort_data(slice_xs, slice_ys)
         slice_xs = np.add(slice_xs, -1*alignment_points[i][0])
         slice_xs = np.add(slice_xs, 12.23) # From measurement to alignment point
-        # alignment_points[i][0] = 0
 
         if not skip_flag:
             # Creates a new thread with target function 
@@ -59,10 +53,8 @@ def align_data(xs, ys, indices, alignment_points):
             # break
 
         if i + 1 < len(indices):
-            # xs[indices[i]:indices[i+1]] = np.add(xs[indices[i]:indices[i+1]], -1*alignment_points[i])#shift_factor_x)
             xs[indices[i]:indices[i+1]], ys[indices[i]:indices[i+1]], _, _ = gen_disp_pts(slice_xs, slice_ys, alignment_points[i][0], alignment_points[i][1])
         else:
-            # xs[indices[i]:len(xs)] = np.add(xs[indices[i]:len(xs)], -1*alignment_points[i])# shift_factor_x)
             xs[indices[i]:len(xs)], ys[indices[i]:len(xs)], _, _ = gen_disp_pts(slice_xs, slice_ys, alignment_points[i][0], alignment_points[i][1])
 
         master_xs = xs[indices[0]:indices[1]]

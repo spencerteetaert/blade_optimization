@@ -134,7 +134,7 @@ def rotate_contour(contour, angle, cx=None, cy=None):
 
     return rotated_contour
 
-def rotate_points(xs, ys, angle, cx=None, cy=None):
+def rotate_points(xs, ys, angle, cx=0, cy=0):
     points = [[xs[i]*10000, ys[i]*10000] for i in range(0, len(xs))]
     ctr = pts_to_contour(points)
     ctr = sort_contour(ctr)
@@ -185,9 +185,9 @@ def expand_contour(contour, scale_factor, expansion):
         function smooths, expands, and returns
         expanded contour.
 
-        contour == contour wanting to be expanded 
-        scale_factor == scale factor of contour to cm (contour / scale_factor = cm)
-        expansion == desired expansion distance in cm
+        contour ==> contour wanting to be expanded 
+        scale_factor ==> scale factor of contour to cm (contour / scale_factor = cm)
+        expansion ==> desired expansion distance in cm
     '''
     # Smoothes contour and adds resolution 
     contour = smooth_contour(contour)

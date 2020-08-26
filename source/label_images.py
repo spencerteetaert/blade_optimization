@@ -12,9 +12,6 @@ from . import contours as c
 from .data_io import write_data
 from . import geometry
 
-##########################################
-### User Constants -- Edit as required ###
-##########################################
 IMAGE_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data\Good Images" # Folder where images are located 
 OUTPUT_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data" # Folder where saved data should be exported to 
 
@@ -22,10 +19,6 @@ DATA_TYPE = ".JPG"
 LINE_LENGTH = 10 # cm, length of reference line in image
 
 RESOLUTION = 50.526 #px/cm, the resolution of the display screen 
-
-#########################################
-### Program Constants -- Don't change ###
-#########################################
 
 STATES = {1: "Setting Length", 2: "Setting Angle", 3: "Choosing Points", 4: "Choosing Peak"}
 state = STATES[1]
