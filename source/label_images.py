@@ -11,6 +11,7 @@ import imutils
 from . import contours as c
 from .data_io import write_data
 from . import geometry
+from . import window
 
 IMAGE_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data\Good Images" # Folder where images are located 
 OUTPUT_FOLDER = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\Program Data" # Folder where saved data should be exported to 
@@ -29,9 +30,11 @@ mouseX = 0
 mouseY = 0
 img = 0
 
+display_break_flag = False
+
 scale = 0 # cm/px 
 angle = 0 # degrees
-current_fat_thickness = 2.0
+current_fat_thickness = 12
 scale_points = []
 angle_points = []
 chosen_points = []
@@ -77,7 +80,10 @@ def mouse_event(event, pX, pY, flags, param):
             state = STATES[3]
             
         elif state == STATES[3]: # Choosing points
-            to_add = geometry.expand_for_fat([pX, pY], mouse_down, current_fat_thickness/scale)
+            if mouse_down[0] != pX or mouse_down[1] != pY: 
+                to_add = geometry.expand_for_fat([pX, pY], mouse_down, current_fat_thickness/scale)
+            else:
+                to_add = [pX, pY]
             chosen_points += [to_add]
 
         mouse_down = []
@@ -87,11 +93,16 @@ def mouse_event(event, pX, pY, flags, param):
             mouse_down = [pX, pY]
 
 def display():
-    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness, angle, peak_point
+    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness, angle, peak_point, display_break_flag
 
     cv2.imshow("Image", img)
     cv2.setMouseCallback("Image", mouse_event)
     while True:
+        current_fat_thickness = float(window.fat_thickness.get())/10
+        if display_break_flag:
+            display_break_flag = False
+            cv2.destroyWindow("Image")
+            break
         canvas = copy.deepcopy(img)
         to_draw = draw(canvas)
         cv2.imshow("Image", to_draw)
@@ -115,12 +126,16 @@ def display():
             state = "Choosing Peak"
             peak_point = [0, 0]
 
-        elif t == 119: # w
-            current_fat_thickness += 0.1
-            current_fat_thickness = min(current_fat_thickness, 5)
-        elif t == 115: # s
-            current_fat_thickness -= 0.1
-            current_fat_thickness = max(current_fat_thickness, 0)
+        # elif t == 119: # w
+        #     current_fat_thickness += 0.1
+        #     current_fat_thickness = min(current_fat_thickness, 5)
+        #     print("SEtting thickness to:", current_fat_thickness)
+        #     window.fat_thickness.set(current_fat_thickness)
+        #     print("Thickness set to:", window.fat_thickness.get())
+        # elif t == 115: # s
+        #     current_fat_thickness -= 0.1
+        #     current_fat_thickness = max(current_fat_thickness, 0)
+        #     window.fat_thickness.set(current_fat_thickness)
 
         elif t == 97: # a
             angle += 1

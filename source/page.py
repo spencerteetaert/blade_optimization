@@ -10,7 +10,7 @@ class Page:
         self.parent = parent
         self.window = window
 
-        self.frame = tk.Frame(window)
+        self.frame = tk.LabelFrame(window, text=name, width=400)
         self.frame.pack()
         if parent is None:
             self.layer = 0
@@ -19,9 +19,6 @@ class Page:
         
         self.children = [parent]
         self.containers = []
-
-        title = tk.Label(self.frame, text=self.name, **H1)
-        self.add_container(title)
 
         self.temp_storage = ""
 

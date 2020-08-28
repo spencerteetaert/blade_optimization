@@ -15,7 +15,9 @@ def load_data(data_path):
     # Reads 
     for line in data:
         line_data = line.split(',')
-        if len(line_data) > 7:
+        print(line_data)
+        if line_data[0] != '':
+            print("PASSED")
             image_data += [line_data[0]]
             index = 2
             indices += [len(xs)]
