@@ -5,7 +5,7 @@ from textwrap import wrap
 from scipy.optimize import curve_fit
 from scipy import stats
 from scipy.integrate import quad
-import matplotlib.pyplot as plt 
+from matplotlib.pyplot import figure, show 
 import numpy as np
 from tqdm import tqdm
 
@@ -58,7 +58,7 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
     y = func_for_graph(x, fitparams)
     y2 = func_for_graph(x, fit2)
 
-    fig = plt.figure(figsize=(8,8))
+    fig = figure(figsize=(8,8))
 
     ax = fig.add_subplot(111, polar=True)
 
@@ -80,15 +80,15 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
 
     ax.axis([-math.pi, 0, 0, 20])
 
-    plt.show()
+    show()
 
 def graph_cartesian(xs, ys, bounds):
-    fig = plt.figure(figsize=(8,8))
+    fig = figure(figsize=(8,8))
     ax = fig.add_subplot(111)
     ax.scatter(xs, ys, s=0.5, c="lightblue")
     ax.axis(bounds)
 
-    plt.show()
+    show()
 
 def deviate(thetas, rs, percentile, dtheta=1):
     '''
