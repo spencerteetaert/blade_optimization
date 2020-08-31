@@ -1,7 +1,7 @@
 import threading
 
-import matplotlib
-import matplotlib.pyplot as plt
+from matplotlib import use
+from matplotlib.pyplot import figure, close
 import cv2
 import numpy as np
 
@@ -17,7 +17,7 @@ shift_factor_y = 0
 break_flag = False
 skip_flag = False
 
-def figure_to_array(fig:plt.figure):
+def figure_to_array(fig:figure):
     fig.canvas.draw()
     w,h = fig.canvas.get_width_height()
     ret = np.frombuffer(fig.canvas.tostring_argb(), dtype=np.uint8)
@@ -27,7 +27,7 @@ def figure_to_array(fig:plt.figure):
 
 def align_data(xs, ys, indices, alignment_points):
     global master_xs, master_ys, break_flag, shift_factor_x, shift_factor_y, skip_flag
-    matplotlib.use('Agg')
+    use('Agg')
     
     for i in range(0, len(indices)): 
         if i + 1 < len(indices):
@@ -60,7 +60,7 @@ def align_data(xs, ys, indices, alignment_points):
         master_xs = xs[indices[0]:indices[1]]
         master_ys = ys[indices[0]:indices[1]]
 
-    matplotlib.use('TkAgg')
+    use('TkAgg')
     return xs, ys
 
 def display(xs, ys, alignment_point):
@@ -133,7 +133,7 @@ def refresh(xs, ys, cx, cy):
 def gen_fig_array(xs, ys, cx, cy):
     global master_xs, master_ys
 
-    fig = plt.figure(figsize=(8, 8))
+    fig = figure(figsize=(8, 8))
     ax = fig.add_subplot(111)
 
     ax.scatter(master_xs, master_ys, color='black')
@@ -148,7 +148,7 @@ def gen_fig_array(xs, ys, cx, cy):
     fig.set_size_inches(10, 10)
 
     ret = figure_to_array(fig)
-    plt.close(fig)
+    close(fig)
     return ret
 
 def gen_disp_pts(xs, ys, cx, cy):

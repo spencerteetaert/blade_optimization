@@ -1,18 +1,31 @@
 import math
 import time
+from textwrap import wrap
 
 from scipy.optimize import curve_fit
 from scipy import stats
 from scipy.integrate import quad
-import matplotlib.pyplot as plt 
+from matplotlib.pyplot import figure, show 
 import numpy as np
 from tqdm import tqdm
 
-def func(x, a, b, c, d, f, g, h, i):    
-    fun = np.polyval([a, b, c, d, f, g, h, i], x)
+polynomial_degree = 7
+
+def func(x, a=0, b=0, c=0, d=0, e=0, f=0, g=0, h=0, i=0, j=0, k=0, l=0, m=0):
+    global polynomial_degree
+    args = [a, b, c, d, e, f, g, h, i, j, k, l, m]
+    params = [args[i] for i in range(0, polynomial_degree+1)]
+    fun = np.polyval(params, x)
+    return fun
+def func_for_graph(x, *args):
+    global polynomial_degree
+    print("ARGS",args)
+    params = [args[0][i] for i in range(0, polynomial_degree+1)]
+    fun = np.polyval(params, x)
     return fun
 
 def fit_curve(xs, ys):
+    global polynomial_degree
     start = time.time()
     params, _ = curve_fit(func, xs, ys)
     print("Curve fit with parameters\n", params, "in", round(time.time() - start, 2), "seconds.")
@@ -40,14 +53,24 @@ def sort_data(xs, ys):
     return temp[i,0], temp[i,1]
 
 def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
+    global polynomial_degree
     x = np.linspace(-3.1415, -0.5585, 1000)
-    y = func(x, fitparams[0], fitparams[1], fitparams[2], fitparams[3], fitparams[4], fitparams[5], fitparams[6], fitparams[7])
-    y2 = func(x, fit2[0], fit2[1], fit2[2], fit2[3], fit2[4], fit2[5], fit2[6], fit2[7])
+    y = func_for_graph(x, fitparams)
+    y2 = func_for_graph(x, fit2)
 
-    fig = plt.figure(figsize=(8,8))
+    fig = figure(figsize=(8,8))
 
     ax = fig.add_subplot(111, polar=True)
-    ax.set_title(fit2)
+
+    title = "Fit Polynomial: "
+    for i in range(0, polynomial_degree):
+        title += str(round(fit2[i], 3))
+        title += "x^"
+        title += str(polynomial_degree-i)
+        title += " + "
+    title += str(round(fit2[polynomial_degree], 3))
+
+    ax.set_title("\n".join(wrap(title, 50)))
     ax.plot(x, y, c="pink", linewidth=1)
     ax.plot(x, y2, c="red", linewidth=3)
     ax.scatter(xs, ys, c="lightblue",s=0.5)
@@ -57,15 +80,15 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
 
     ax.axis([-math.pi, 0, 0, 20])
 
-    plt.show()
+    show()
 
 def graph_cartesian(xs, ys, bounds):
-    fig = plt.figure(figsize=(8,8))
+    fig = figure(figsize=(8,8))
     ax = fig.add_subplot(111)
     ax.scatter(xs, ys, s=0.5, c="lightblue")
     ax.axis(bounds)
 
-    plt.show()
+    show()
 
 def deviate(thetas, rs, percentile, dtheta=1):
     '''
