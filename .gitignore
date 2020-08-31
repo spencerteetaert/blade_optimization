@@ -13,6 +13,7 @@ tempCodeRunnerFile.*
 test.py
 
 # Distribution / packaging
+*.bat
 .Python
 build.py
 build/
