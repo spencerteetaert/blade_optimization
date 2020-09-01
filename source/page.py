@@ -57,52 +57,14 @@ class Page:
             print("ERR: Requested page not found.")
 
     def turn_on(self):
-        # print("Page %s turned on." % self.name)
         self.frame.pack()
         for container in self.containers:
             container[0].pack(**container[1])
-            # print("Container %s packed" % container)
     def turn_off(self):
-        # print("Page %s turned off." % self.name)
         self.frame.pack_forget()
         for container in self.containers:
             container[0].pack_forget()
 
-    # def find_child(self, child_name):
-    #     for i in range(0, len(self.children)):
-    #         if self.children[i] is None:
-    #             continue
-    #         if child_name == self.children[i].name:
-    #             return i
-
-        # print("ERR: Child \"%s\" not found" % child_name)
-        # return -1
 
 def switch_pages(current_page, destination):
     current_page.go_to_page(destination)
-
-# H3 = {"font":("Arial", 8, "bold"), "padx":10, "pady":5}
-
-# window = tk.Tk()
-# h = Page("Head Page", window)
-# c1 = Page("Child 1", window, h)
-# c2 = Page("Child 2", window, h)
-# c1_1 = Page("Child 1's child", window, c1)
-
-# h.add_child(c1)
-# h.add_child(c2)
-# c1.add_child(c1_1)
-
-# print(h)
-
-# h_lbl1 = tk.Label(h.frame, text="THIS IS A TEST", **H3)
-# h.add_container(h_lbl1)
-
-# h_btn1 = tk.Button(h.frame, **H3, command=partial(switch_pages, h, "Child 1"))
-# h.add_container(h_btn1)
-
-# c1_btn1 = tk.Button(c1.frame, **H3, command=partial(switch_pages, c1, "Child 1's child"))
-# c1.add_container(c1_btn1)
-
-# h.turn_on()
-# window.mainloop()
