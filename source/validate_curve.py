@@ -14,7 +14,6 @@ from .curves import polar_to_cartesian
 from .contours import rotate_points
 from . import window
 
-REFERENCE_LENGTH = 24.79
 FLIP_BLADE = False
 
 rulers = []
@@ -34,7 +33,7 @@ output = None
 xs, ys = [], []
 
 def gen_curve_disp():
-    global xs, ys
+    global xs, ys, scale
     params = [float(window.param1.get()), float(window.param2.get()), float(window.param3.get()), \
         float(window.param4.get()), float(window.param5.get()), float(window.param6.get()), \
             float(window.param7.get()), float(window.param8.get()), float(window.param9.get()), \
@@ -47,6 +46,8 @@ def gen_curve_disp():
     rs = np.polyval(params, thetas)
     xs, ys = polar_to_cartesian(thetas, rs)
     xs, ys = rotate_points(xs, ys, 180)
+    xs = np.multiply(xs, 1/scale) # Scale to new
+    ys = np.multiply(ys, 1/scale)
 
 def strip_trailing(a):
     for i in range(len(a) - 1, -1, -1):
@@ -83,7 +84,7 @@ def draw(img, sx, sy):
     if mousedown_:
         colour = (255, 0, 255) if len(rulers) > 0 else (255, 255, 255)
         cv2.line(ret, (mousedown[0] + sx, mousedown[1] + sy), (current_mouse_pos[0] + sx, current_mouse_pos[1] + sy), colour, 2)
-        to_write = str(round(current_mag, 2)) if len(rulers) > 0 else "24.79"
+        to_write = str(round(current_mag, 2)) if len(rulers) > 0 else str(window.known_length.get())
         cv2.putText(ret, "Line length:" + to_write + "cm", (mousedown[0] + sx, mousedown[1] + sy), font, 0.6, (0,0,0))
 
     return ret
@@ -163,7 +164,7 @@ def mouse_event(event, pX, pY, flags, param):
             xs = np.multiply(xs, scale) # Scale back to normal
             ys = np.multiply(ys, scale)
 
-            scale = REFERENCE_LENGTH / mag((mousedown[0] + shift_factor_x, mousedown[1] + shift_factor_y), (pX, pY)) # cm/px
+            scale = window.known_length.get() / mag((mousedown[0] + shift_factor_x, mousedown[1] + shift_factor_y), (pX, pY)) # cm/px
             
             xs = np.multiply(xs, 1/scale) # Scale to new
             ys = np.multiply(ys, 1/scale)
@@ -181,19 +182,11 @@ def main(image_folder, data_type, output_folder):
     global rulers
 
     path = image_folder + "\*." + data_type
-    names = glob.glob(path)
-    print(names)
+    images = glob.glob(path)
 
-    # with open(r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\image data\Validation Images\Output Folder\t.csv", 'w') as csvfile:
-    #     writer = csv.writer(csvfile, delimiter=",")
-    #     to_write = []
-    #     for name in names:
-    #         to_write += [name[-12:]]
-    #     writer.writerow(to_write)
-
-    for i in range(0, len(names)):
-        print(names[i])
-        img = cv2.imread(names[i])
+    for i in range(0, len(images)):
+        print(images[i])
+        img = cv2.imread(images[i])
         img = scale_img(img)
         
         iH, iW, _ = img.shape
@@ -212,8 +205,6 @@ def main(image_folder, data_type, output_folder):
         rulers = []
     
         if window.save_toggle.get():
-            filename = output_folder + "\\" + names[i][-12:]
+            filename = output_folder + "\\" + images[i][-12:]
             cv2.imwrite(filename, output)
             print("Saved file to",filename)
-
-# main()

@@ -34,8 +34,8 @@ P2 = {"font":("Arial", 8, "italic"), "padx":5, "pady":5}
 
 #Main window construction 
 window = tk.Tk()
-window.geometry('350x650')
-window.resizable(width=False, height=False)
+# window.geometry('350x650')
+# window.resizable(width=False, height=False)
 window.title("Blade Designer")
 
 photo = tk.PhotoImage(file = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\welcome-logo.png")
@@ -62,6 +62,7 @@ degree = tk.IntVar(window, value=8)
 percentile = tk.DoubleVar(window, value=95)
 dtheta = tk.DoubleVar(window, value=3)
 
+known_length = tk.DoubleVar(window, value=24.79)
 param1 = tk.DoubleVar(window, value=0.3456)
 param2 = tk.DoubleVar(window, value=3.7461)
 param3 = tk.DoubleVar(window, value=15.3396)
@@ -119,6 +120,8 @@ def into_curve_validation(p1, p2):
     t = threading.Thread(target = validate_curve.main, args=[image_folder.get(), image_type.get(), output_folder.get()])
     t.daemon = True
     t.start()
+def mirror_blade():
+    validate_curve.FLIP_BLADE = True
 
 # Landing page construction 
 lbl = tk.Label(p1.frame, text="What would you like to do today?")
@@ -259,6 +262,10 @@ p7.add_container(btn)
 
 
 # Validate data page construction 
+lbl = tk.Label(p8.frame, text="Enter a known measurement value (cm).")
+p8.add_container(lbl)
+ent = tk.Entry(p8.frame, textvariable=known_length)
+p8.add_container(ent)
 lbl = tk.Label(p8.frame, text="Enter the constants for your fit curve \nstarting with the highest degree. \ni.e. if your function is \"Ax^2 \
 + Bx + C\", \nyou would enter A in the first box, B in the second,\n and C in the third. Leave all other boxes as 0")
 p8.add_container(lbl)
@@ -288,12 +295,19 @@ ent = tk.Entry(p8.frame, textvariable=param12)
 p8.add_container(ent)
 btn = tk.Button(p8.frame, text="Recalculate Curve", command=validate_curve.gen_curve_disp)
 p8.add_container(btn)
+btn = tk.Button(p8.frame, text="Mirror Curve", command=mirror_blade)
+p8.add_container(btn)
 
 rad = tk.Checkbutton(p8.frame, text="Save overlay?",variable=save_toggle)
 p8.add_container(rad)
 
 btn = tk.Button(p8.frame, text="Back", command=partial(switch_pages, p8, p7))
 p8.add_container(btn)
+
+help_text = "Use WASD and Arrow Keys to adjust the position of the overlay.\nClick and drag to add a white scale from a known value.\n\
+    Click and drag to add pink rulers.\nPress BACKSPACE to remove your last mark.\nPress SPACE to go to next image.\nPress Q to quit."
+help_menu = HelpMenu(help_text)
+p8.add_container(help_menu)
 
 #Linking Pages 
 p1.add_child(p2)
