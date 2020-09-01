@@ -1,6 +1,9 @@
 import tkinter as tk
 from tkinter import filedialog
 import threading
+import os
+import sys
+
 import cv2
 
 from .page import *
@@ -38,7 +41,17 @@ window = tk.Tk()
 # window.resizable(width=False, height=False)
 window.title("Blade Designer")
 
-photo = tk.PhotoImage(file = r"C:\Users\User\Documents\Hylife 2020\One Piece Blade Optimization\welcome-logo.png")
+
+relative_path = r"source\welcome-logo.png"
+""" Get absolute path to resource, works for dev and for PyInstaller """
+try:
+    # PyInstaller creates a temp folder and stores path in _MEIPASS
+    base_path = sys._MEIPASS
+except Exception:
+    base_path = os.path.abspath(".")
+
+path = os.path.join(base_path, relative_path)
+photo = tk.PhotoImage(file = path)
 window.iconphoto(False, photo)
 
 # Page Initialization 
@@ -96,6 +109,8 @@ def into_labelling(p1, p2):
     t = threading.Thread(target = label_images.main, args=[image_folder.get(), image_type.get(), output_folder.get()])
     t.daemon = True
     t.start()
+def flip_image():
+    label_images.FLIP_IMAGE_TOGGLE = True
 def next_image():
     label_images.display_break_flag = True
 def finish_labelling():
@@ -166,6 +181,11 @@ btn = tk.Button(p2.frame, text="Back", command=partial(switch_pages, p2, p1))
 p2.add_container(btn)
 
 #Label Images Labelling Page construction 
+lbl = tk.Label(p3.frame, text="All labelled images MUST have their belly sides facing right.")
+p3.add_container(lbl)
+btn = tk.Button(p3.frame, text="Flip Image", command=flip_image)
+p3.add_container(btn)
+
 lbl = tk.Label(p3.frame, text="Fat thickness (mm)")
 p3.add_container(lbl)
 fat_thickness_selector = tk.Spinbox(p3.frame, textvariable=fat_thickness, from_=0, to=50)
@@ -221,9 +241,9 @@ p5.add_container(help_menu)
 
 #Program info page construction 
 info = tk.Text(p6.frame, wrap=tk.WORD, height=20)
-info_str = "Blade Designer v1.0\nBy Spencer Teetaert (Continuous Improvement)\n\n\
-    Last updated on August 28, 2020\n\nSource code available at: https://github.com/spencerteetaert/blade_optimization\n\n\
-    No updates for this software are planned."
+info_str = "Blade Designer v1.2\nBy Spencer Teetaert (Continuous Improvement)\n\n\
+    Last updated on September 1, 2020\n\nSource code available at: https://github.com/spencerteetaert/blade_optimization\n\n\
+    No updates for this software are planned after September 4, 2020."
 info.insert("end", info_str)
 info['state'] = "disabled"
 p6.add_container(info)

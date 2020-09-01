@@ -5,7 +5,7 @@ from textwrap import wrap
 from scipy.optimize import curve_fit
 from scipy import stats
 from scipy.integrate import quad
-from matplotlib.pyplot import figure, show 
+from matplotlib.pyplot import figure, show, tight_layout
 import numpy as np
 from tqdm import tqdm
 
@@ -58,14 +58,14 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
     y = func_for_graph(x, fitparams)
     y2 = func_for_graph(x, fit2)
 
-    fig = figure(figsize=(8,8))
+    fig = figure(figsize=(8,6))
 
     ax = fig.add_subplot(111, polar=True)
 
-    title = "Fit Polynomial: "
+    title = "Fit Polynomial: \nr = "
     for i in range(0, polynomial_degree):
         title += str(round(fit2[i], 3))
-        title += "x^"
+        title += "Θ^"
         title += str(polynomial_degree-i)
         title += " + "
     title += str(round(fit2[polynomial_degree], 3))
@@ -80,6 +80,7 @@ def graph_data(xs, ys, xs2, ys2, fitparams, fit2):
 
     ax.axis([-math.pi, 0, 0, 20])
 
+    tight_layout()
     show()
 
 def graph_cartesian(xs, ys, bounds):

@@ -21,6 +21,8 @@ LINE_LENGTH = 10 # cm, length of reference line in image
 
 RESOLUTION = 50.526 #px/cm, the resolution of the display screen 
 
+FLIP_IMAGE_TOGGLE = False
+
 STATES = {1: "Setting Length", 2: "Setting Angle", 3: "Choosing Points", 4: "Choosing Peak"}
 state = STATES[1]
 
@@ -93,11 +95,15 @@ def mouse_event(event, pX, pY, flags, param):
             mouse_down = [pX, pY]
 
 def display():
-    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness, angle, peak_point, display_break_flag
+    global img, break_flag, state, scale_points, angle_points, chosen_points, current_fat_thickness, angle, peak_point, display_break_flag, FLIP_IMAGE_TOGGLE
 
     cv2.imshow("Image", img)
     cv2.setMouseCallback("Image", mouse_event)
     while True:
+        if FLIP_IMAGE_TOGGLE:
+            FLIP_IMAGE_TOGGLE = False
+            print("FLIPPEd")
+            img = cv2.flip(img, 1)
         current_fat_thickness = float(window.fat_thickness.get())/10
         if display_break_flag:
             display_break_flag = False
