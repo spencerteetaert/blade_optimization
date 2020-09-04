@@ -56,4 +56,4 @@ Construction for GUI
 ### main.py 
 Runs the program. 
 
-![Home Page](/resources/images/home_page.PNG) ![Info Page](/resources/images/info_page.PNG)
+![Home Page](/resources/images/home.PNG) ![Info Page](/resources/images/info.PNG)
