@@ -34,10 +34,7 @@ xs, ys = [], []
 
 def gen_curve_disp():
     global xs, ys, scale
-    params = [float(window.param1.get()), float(window.param2.get()), float(window.param3.get()), \
-        float(window.param4.get()), float(window.param5.get()), float(window.param6.get()), \
-            float(window.param7.get()), float(window.param8.get()), float(window.param9.get()), \
-                float(window.param10.get()), float(window.param11.get()), float(window.param12.get())]
+    params = [float(window.fit_params[i].get()) for i in range(0, 12)]
     strip_trailing(params)
 
     print("PARAMS", params)
@@ -148,7 +145,6 @@ def mag(p1, p2):
     return ((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)**0.5
 
 def mouse_event(event, pX, pY, flags, param):
-    global REFERENCE_LENGTH
     global xs, ys
     global shift_factor_x, shift_factor_y, scale
     global rulers, mousedown, mousedown_, current_mouse_pos

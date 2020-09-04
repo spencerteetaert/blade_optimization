@@ -36,37 +36,6 @@ def find_indices(contour):
 
     return left_index, right_index
 
-def crop_top(contour):
-    '''
-        Given a contour, crops the top portion of it that is, 
-        every point above the rightmost and leftmost points 
-    '''
-    ret = []
-
-    left_index, right_index = find_indices(contour)
-
-    mid_x = (contour[left_index, 0, 0] + contour[right_index, 0, 0])/2 
-    width = contour[right_index, 0, 0] - contour[left_index, 0, 0]
-
-    left_boundary =  mid_x + width
-    right_boundary = mid_x - width
-
-    left_high = contour[left_index, 0, 1]
-    right_high = contour[right_index, 0, 1]
-
-    for i in range(0, len(contour[:,0,:])):
-        if contour[i, 0, 0] >= right_boundary and contour[i, 0, 1] >= right_high:
-            pass
-                # ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
-        elif contour[i, 0, 0] <= left_boundary and contour[i, 0, 1] >= left_high:
-            pass
-                # ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
-        else:
-            ret += [[contour[i, 0, 0], contour[i, 0, 1]]]
-
-    ret = np.array(ret).reshape((-1, 1, 2)).astype(np.int32)
-    return ret
-
 def shift_left(contour, alignment_percentile=20):
     # shift_factor = stats.scoreatpercentile(contour[:,0,0], alignment_percentile)
     left_index, right_index = find_indices(contour)
@@ -130,7 +99,6 @@ def rotate_contour(contour, angle, cx=None, cy=None):
     normalized_contour[:, 0, 1] = ys
 
     rotated_contour = normalized_contour + [cx, cy]
-    # rotated_contour = rotated_contour.astype(np.int32)
 
     return rotated_contour
 
@@ -191,7 +159,6 @@ def expand_contour(contour, scale_factor, expansion):
     '''
     # Smoothes contour and adds resolution 
     contour = smooth_contour(contour)
-    # return contour[0] 
 
     # Finds distance transform of drawn contour
     new_size = (int(max(contour[:,0,1]) + 100), int(max(contour[0][:,0,0]) + 100), 3)

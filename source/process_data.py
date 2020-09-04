@@ -25,7 +25,6 @@ def main(data_path):
     pts = [[loaded_xs[i], loaded_ys[i]] for i in range(0, len(loaded_xs))]
 
     # Scales points to gain resolution with contour functions 
-    # pts = contours.scale_pts(pts, SCALE_FACTOR)
     pts = np.array(pts)
 
     # Expand contour for each curve
@@ -48,8 +47,6 @@ def main(data_path):
     shift_factor = min(resultant_ys) + 12.3
     resultant_ys = np.add(resultant_ys, -1*shift_factor) 
 
-    # curves.graph_cartesian(resultant_xs, resultant_ys, [10, 35, -25, 0])
-
     # Converts gathered data to polar (reduces error on blade edges)
     thetas, rs = curves.cartesian_to_polar(resultant_xs, resultant_ys)
 
@@ -63,7 +60,8 @@ def find_best_fit():
 
     thetas2, rs_deviated = curves.deviate(thetas2, rs_deviated, percentile, dtheta)
 
-    # Adds 100 points on gemoetric constraints to force a fita
+    # Adds 100 points on gemoetric constraints to force a fit
+    # At some point might want to add an option to let user specify these
     thetas2 = np.concatenate((thetas2, np.multiply(np.ones([100000,]),-math.pi*8/45)))
     thetas2 = np.concatenate((thetas2, np.multiply(np.ones([100000,]),-math.pi)))
     rs_deviated = np.concatenate((rs_deviated, np.multiply(np.ones([100000,]), 12.43)))

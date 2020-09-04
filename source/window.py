@@ -1,5 +1,4 @@
 import tkinter as tk
-from tkinter import filedialog
 import threading
 import os
 import sys
@@ -64,7 +63,6 @@ p6 = Page("Program Info", window, p1)
 p7 = Page("Validate Design", window, p1)
 p8 = Page("Validate Design", window, p7)
 
-# params = [0.3456, 3.7461, 15.3396, 27.8140, 14.7643, -19.9692, -28.3144, 3.4369]
 #Page Functions
 image_folder = tk.StringVar(window)
 output_folder = tk.StringVar(window)
@@ -76,20 +74,15 @@ percentile = tk.DoubleVar(window, value=95)
 dtheta = tk.DoubleVar(window, value=3)
 
 known_length = tk.DoubleVar(window, value=24.79)
-param1 = tk.DoubleVar(window, value=0.3456)
-param2 = tk.DoubleVar(window, value=3.7461)
-param3 = tk.DoubleVar(window, value=15.3396)
-param4 = tk.DoubleVar(window, value=27.8140)
-param5 = tk.DoubleVar(window, value=14.7643)
-param6 = tk.DoubleVar(window, value=-19.9692)
-param7 = tk.DoubleVar(window, value=-28.3144)
-param8 = tk.DoubleVar(window, value=3.4369)
-param9 = tk.DoubleVar(window, value=0)
-param10 = tk.DoubleVar(window, value=0)
-param11 = tk.DoubleVar(window, value=0)
-param12 = tk.DoubleVar(window, value=0)
+
+params = [0.3456, 3.7461, 15.3396, 27.8140, 14.7643, -19.9692, -28.3144, 3.4369, 0, 0, 0, 0]
+fit_params = [tk.DoubleVar(window, value=params[i]) for i in range(0, len(params))]
+
 save_toggle = tk.BooleanVar(window, value=False)
 
+def quit_app(): 
+    global window
+    window.destroy()
 def select_input_folder():
     global image_folder
     temp = tk.filedialog.askdirectory()
@@ -103,7 +96,8 @@ def select_input_file():
     temp = tk.filedialog.askopenfilename()
     input_data.set(temp)
 def into_labelling(p1, p2):
-    global image_types, image_folder, output_folder
+    global image_types, image_folder, output_folder, known_length
+    known_length.set(10)
     switch_pages(p1, p2)
     # Creates a new thread with target function 
     t = threading.Thread(target = label_images.main, args=[image_folder.get(), image_type.get(), output_folder.get()])
@@ -111,6 +105,7 @@ def into_labelling(p1, p2):
     t.start()
 def flip_image():
     label_images.FLIP_IMAGE_TOGGLE = True
+    reset_points()
 def next_image():
     label_images.display_break_flag = True
 def finish_labelling():
@@ -129,7 +124,8 @@ def into_processing(p1, p2):
     t.daemon = True
     t.start()
 def into_curve_validation(p1, p2):
-    global input_data
+    global input_data, known_length
+    known_length.set(24.79)
     switch_pages(p1, p2)
     # Creates a new thread with target function 
     t = threading.Thread(target = validate_curve.main, args=[image_folder.get(), image_type.get(), output_folder.get()])
@@ -149,6 +145,8 @@ p1.add_container(btn)
 btn = tk.Button(p1.frame, text="Validate Design", command=partial(switch_pages, p1, p7))
 p1.add_container(btn)
 btn = tk.Button(p1.frame, text="Program Info", command=partial(switch_pages, p1, p6))
+p1.add_container(btn)
+btn = tk.Button(p1.frame, text="Quit", command=quit_app)
 p1.add_container(btn)
 
 #Label Images Inputs Page construction 
@@ -185,6 +183,11 @@ lbl = tk.Label(p3.frame, text="All labelled images MUST have their belly sides f
 p3.add_container(lbl)
 btn = tk.Button(p3.frame, text="Flip Image", command=flip_image)
 p3.add_container(btn)
+
+lbl = tk.Label(p3.frame, text="Enter a known measurement value (cm).")
+p3.add_container(lbl)
+ent = tk.Entry(p3.frame, textvariable=known_length)
+p3.add_container(ent)
 
 lbl = tk.Label(p3.frame, text="Fat thickness (mm)")
 p3.add_container(lbl)
@@ -241,9 +244,9 @@ p5.add_container(help_menu)
 
 #Program info page construction 
 info = tk.Text(p6.frame, wrap=tk.WORD, height=20)
-info_str = "Blade Designer v1.2\nBy Spencer Teetaert (Continuous Improvement)\n\n\
-    Last updated on September 1, 2020\n\nSource code available at: https://github.com/spencerteetaert/blade_optimization\n\n\
-    No updates for this software are planned after September 4, 2020."
+info_str = "Blade Designer v1.3\nBy Spencer Teetaert (Continuous Improvement)\n\n\
+    Last updated on September 4, 2020\n\nSource code available at: https://github.com/spencerteetaert/blade_optimization\n\n\
+    No further updates for this software are planned."
 info.insert("end", info_str)
 info['state'] = "disabled"
 p6.add_container(info)
@@ -289,30 +292,11 @@ p8.add_container(ent)
 lbl = tk.Label(p8.frame, text="Enter the constants for your fit curve \nstarting with the highest degree. \ni.e. if your function is \"Ax^2 \
 + Bx + C\", \nyou would enter A in the first box, B in the second,\n and C in the third. Leave all other boxes as 0")
 p8.add_container(lbl)
-ent = tk.Entry(p8.frame, textvariable=param1)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param2)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param3)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param4)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param5)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param6)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param7)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param8)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param9)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param10)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param11)
-p8.add_container(ent)
-ent = tk.Entry(p8.frame, textvariable=param12)
-p8.add_container(ent)
+
+for i in range(0, 12):
+    ent = tk.Entry(p8.frame, textvariable=fit_params[i])
+    p8.add_container(ent)
+
 btn = tk.Button(p8.frame, text="Recalculate Curve", command=validate_curve.gen_curve_disp)
 p8.add_container(btn)
 btn = tk.Button(p8.frame, text="Mirror Curve", command=mirror_blade)

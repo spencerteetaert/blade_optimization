@@ -25,7 +25,6 @@ def func_for_graph(x, *args):
     return fun
 
 def fit_curve(xs, ys):
-    global polynomial_degree
     start = time.time()
     params, _ = curve_fit(func, xs, ys)
     print("Curve fit with parameters\n", params, "in", round(time.time() - start, 2), "seconds.")
